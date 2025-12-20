@@ -1,67 +1,50 @@
 package br.com.dio.ui.custom.input;
 
-import br.com.dio.model.Space;
-import br.com.dio.service.EventEnum;
-import br.com.dio.service.EventListener;
-
 import javax.swing.JTextField;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.Dimension;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import java.awt.Font;
 
-import static br.com.dio.service.EventEnum.CLEAR_SPACE;
-import static java.awt.Font.PLAIN;
+public class NumberText extends JTextField {
 
-public class NumberText extends JTextField implements EventListener {
-
-    private final Space space;
-
-    public NumberText(final Space space) {
-        this.space = space;
-        var dimension = new Dimension(50, 50);
-        this.setSize(dimension);
-        this.setPreferredSize(dimension);
-        this.setVisible(true);
-        this.setFont(new Font("Arial", PLAIN, 20));
-        this.setHorizontalAlignment(CENTER);
-        this.setDocument(new NumberTextLimit());
-        this.setEnabled(!space.isFixed());
-        if (space.isFixed()){
-            this.setText(space.getActual().toString());
-        }
-        this.getDocument().addDocumentListener(new DocumentListener() {
-
-            @Override
-            public void insertUpdate(final DocumentEvent e) {
-                changeSpace();
-            }
-
-            @Override
-            public void removeUpdate(final DocumentEvent e) {
-                changeSpace();
-            }
-
-            @Override
-            public void changedUpdate(final DocumentEvent e) {
-                changeSpace();
-            }
-
-            private void changeSpace(){
-                if (getText().isEmpty()){
-                    space.clearSpace();
-                    return;
-                }
-                space.setActual(Integer.parseInt(getText()));
-            }
-
-        });
+    public NumberText() {
+        super();
+        configure();
     }
 
-    @Override
-    public void update(final EventEnum eventType) {
-        if (eventType.equals(CLEAR_SPACE) && (this.isEnabled())){
-            this.setText("");
-        }
+    private void configure() {
+        setHorizontalAlignment(JTextField.CENTER);
+        setFont(new Font("Arial", Font.BOLD, 22));
+
+        ((AbstractDocument) this.getDocument()).setDocumentFilter(new DocumentFilter() {
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if (isValidInput(fb.getDocument().getLength(), string)) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                if (isValidInput(fb.getDocument().getLength() - length, text)) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            private boolean isValidInput(int currentLength, String text) {
+                if (text == null || text.isEmpty()) {
+                    return true;
+                }
+                if (currentLength >= 1) {
+                    return false;
+                }
+                return text.matches("[1-9]");
+            }
+        });
     }
 }
